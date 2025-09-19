@@ -10,13 +10,32 @@ import os
 import wave
 import audioop
 from audio_recorder_streamlit import audio_recorder
+# ---------- Initialize Google Clients ----------
+# Check if we are running on Streamlit Cloud
+if "GOOGLE_CREDENTIALS" in st.secrets:
+    # Create credentials file from Streamlit secrets
+    creds_json = st.secrets["GOOGLE_CREDENTIALS"]
+    with open("gcp-creds.json", "w") as f:
+        f.write(creds_json)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcp-creds.json"
+    
+    # Configure Gemini with the key from secrets
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=GEMINI_API_KEY)
+else:
+    # For local development, it will use your local setup
+    # Make sure you have set GOOGLE_APPLICATION_CREDENTIALS and GEMINI_API_KEY
+    # as environment variables locally.
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+
 
 # ---------- Initialize Google Clients ----------
 translate_client = translate.Client()
 speech_client = speech.SpeechClient()
 tts_client = texttospeech.TextToSpeechClient()
 language_client = language_v1.LanguageServiceClient()
-
+gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 # ---------- Configure Gemini ----------
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 gemini_model = genai.GenerativeModel("gemini-1.5-flash")
