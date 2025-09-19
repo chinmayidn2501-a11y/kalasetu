@@ -3,12 +3,12 @@ from google.cloud import translate_v2 as translate
 from google.cloud import speech
 from google.cloud import texttospeech
 from google.cloud import language_v1
+from pydub import AudioSegment
+import io
 import google.generativeai as genai
 import pyperclip
 import tempfile
 import os
-import wave
-import audioop
 from audio_recorder_streamlit import audio_recorder
 # ---------- Initialize Google Clients ----------
 # Check if we are running on Streamlit Cloud
@@ -254,39 +254,43 @@ elif selected_page == "Speech-to-Text":
     lang_map = {"English (India)": "en-IN", "Hindi (India)": "hi-IN", "Kannada (India)": "kn-IN", "Tamil (India)": "ta-IN", "Telugu (India)": "te-IN", "Malayalam (India)": "ml-IN"}
     st.subheader("🎙 Record Your Voice")
     audio_bytes = audio_recorder(key="speech_record")
+
     if audio_bytes:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-            f.write(audio_bytes)
-            audio_path = f.name
-        with wave.open(audio_path, "rb") as wf:
-            params = wf.getparams()
-            channels = wf.getnchannels()
-            frames = wf.readframes(wf.getnframes())
-        if channels > 1:
-            mono_frames = audioop.tomono(frames, 2, 1, 1)
-            with wave.open(audio_path, "wb") as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(params.sampwidth)
-                wf.setframerate(params.framerate)
-                wf.writeframes(mono_frames)
         try:
-            with open(audio_path, "rb") as audio_file:
-                content = audio_file.read()
-            audio = speech.RecognitionAudio(content=content)
+            # Use an in-memory buffer
+            audio_buffer = io.BytesIO(audio_bytes)
+
+            # Load the audio data with pydub
+            audio = AudioSegment.from_file(audio_buffer, format="wav")
+
+            # Ensure audio is mono
+            audio = audio.set_channels(1)
+
+            # Export to a format Google Speech-to-Text can handle
+            # Get sample rate from the audio file itself
+            sample_rate = audio.frame_rate
+
+            # Get the raw audio data as bytes
+            content = audio.raw_data
+
+            # Prepare the audio and config for Google Cloud
+            recognition_audio = speech.RecognitionAudio(content=content)
             config = speech.RecognitionConfig(
                 encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-                sample_rate_hertz=params.framerate,
+                sample_rate_hertz=sample_rate,
                 language_code=lang_map[lang],
             )
-            response = speech_client.recognize(config=config, audio=audio)
+
+            # Send to Google and get response
+            response = speech_client.recognize(config=config, audio=recognition_audio)
             text = " ".join([res.alternatives[0].transcript for res in response.results])
+
             st.success(f"*Transcribed Text:* {text}")
             st.session_state["usage"]["speech"] += 1
             show_copy_share(text, "Speech-to-Text")
+
         except Exception as e:
-            st.error(f"Could not transcribe. Please try again. ({e})")
-        finally:
-            os.remove(audio_path)
+            st.error(f"Could not transcribe. Please try again. Error: {e}")
 
 # ---------- Text-to-Speech ----------
 elif selected_page == "Text-to-Speech":
