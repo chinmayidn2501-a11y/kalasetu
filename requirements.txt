@@ -7,4 +7,3 @@ google-generativeai
 pyperclip
 audio-recorder-streamlit
 pydub
-ffmpeg-python
