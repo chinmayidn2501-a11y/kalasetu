@@ -10,37 +10,18 @@ import os
 import wave
 import audioop
 from audio_recorder_streamlit import audio_recorder
-# ---------- Initialize Google Clients ----------
-# Check if we are running on Streamlit Cloud
-if "GOOGLE_CREDENTIALS" in st.secrets:
-    # Create credentials file from Streamlit secrets
-    creds_json = st.secrets["GOOGLE_CREDENTIALS"]
-    with open("gcp-creds.json", "w") as f:
-        f.write(creds_json)
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcp-creds.json"
-    
-    # Configure Gemini with the key from secrets
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=GEMINI_API_KEY)
-else:
-    # For local development, it will use your local setup
-    # Make sure you have set GOOGLE_APPLICATION_CREDENTIALS and GEMINI_API_KEY
-    # as environment variables locally.
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-
-
-# ---------- Initialize Google Clients ----------
+# Initialize Google Clients 
 translate_client = translate.Client()
 speech_client = speech.SpeechClient()
 tts_client = texttospeech.TextToSpeechClient()
 language_client = language_v1.LanguageServiceClient()
 gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-# ---------- Configure Gemini ----------
+# Configure Gemini API
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 
-# ---------- Session State ----------
+# Session State 
 if "usage" not in st.session_state:
     st.session_state["usage"] = {"translation": 0, "speech": 0, "tts": 0, "social": 0, "price": 0}
 if "history" not in st.session_state:
@@ -50,7 +31,7 @@ if "selected_page" not in st.session_state:
 if "kala_chat" not in st.session_state:
     st.session_state["kala_chat"] = []
 
-# ---------- Page Config + Custom Theme ----------
+# Page Config + Custom Theme 
 st.set_page_config(page_title="KalaSetu", layout="wide")
 
 st.markdown("""
@@ -159,7 +140,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ---------- Utility: Copy + Share ----------
+# Utility: Copy + Share
 def show_copy_share(text, feature_name=""):
     if st.button(f"Copy {feature_name}", key=f"copy_{feature_name}"):
         pyperclip.copy(text)
@@ -171,9 +152,9 @@ def show_copy_share(text, feature_name=""):
 
     st.session_state["history"].append(f"[{feature_name}] {text}")
 
-# ---------- Sidebar ----------
+#  Sidebar 
 with st.sidebar:
-    st.image("logo.jpeg", width=100)  # ✅ Added brand logo
+    st.image("logo.jpeg", width=100)  # brand logo
     st.markdown("<h1 style='text-align:center; font-size:3rem;'>KalaSetu</h1>", unsafe_allow_html=True)
     st.markdown("---")
     pages = [
@@ -188,10 +169,10 @@ with st.sidebar:
         "Navigation",
         pages,
         key="sidebar_nav",
-        label_visibility="hidden"  # ✅ Hides the small label above radio
+        label_visibility="hidden"  
     )
 
-# ---------- Extra CSS for Sidebar Navigation ----------
+# Extra CSS for Sidebar Navigation 
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] .stRadio > div {
@@ -202,7 +183,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ---------- Home ----------
+# Home
 if selected_page == "Home":
     st.markdown("<h1>Welcome, Artisan!</h1>", unsafe_allow_html=True)
     st.markdown("<p style='font-size:1.1rem; color:#7b4b3a;'>How can I assist you today?</p>", unsafe_allow_html=True)
@@ -235,7 +216,7 @@ if selected_page == "Home":
         st.markdown("<div class='artisan-card'><img src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSFr9TMom0D9oxmFYEUZBkxB5vYHvCdBM67gA&s' width='100%'><h4>Asha</h4><p>Kochi</p><p>Pottery that tells the stories of Kerala</p></div>", unsafe_allow_html=True)
     st.markdown("<p class='see-more'><b>See more →</b></p>", unsafe_allow_html=True)
 
-# ---------- Other Pages ----------
+# Translation 
 elif selected_page == "Translation":
     st.header("Translation")
     text = st.text_area("Enter text", key="translate_input")
@@ -247,7 +228,7 @@ elif selected_page == "Translation":
         st.session_state["usage"]["translation"] += 1
         show_copy_share(result["translatedText"], "Translation")
 
-# ---------- Speech-to-Text ----------
+# Speech-to-Text 
 elif selected_page == "Speech-to-Text":
     st.header("Speech to Text")
     lang = st.selectbox("Select Speech Language", ["English (India)", "Hindi (India)", "Kannada (India)", "Tamil (India)", "Telugu (India)", "Malayalam (India)"], key="speech_lang")
@@ -288,7 +269,7 @@ elif selected_page == "Speech-to-Text":
         finally:
             os.remove(audio_path)
 
-# ---------- Text-to-Speech ----------
+# Text-to-Speech 
 elif selected_page == "Text-to-Speech":
     st.header("Text-to-Speech")
     text = st.text_area("Enter text to convert to speech", key="tts_input")
@@ -307,7 +288,7 @@ elif selected_page == "Text-to-Speech":
         st.session_state["usage"]["tts"] += 1
         os.remove(audio_file_path)
 
-# ---------- Price Advisor ----------
+# Price Advisor 
 elif selected_page == "Price Advisor":
     st.header("Price Advisor")
     product = st.text_input("Product Name", key="price_product")
@@ -327,7 +308,7 @@ elif selected_page == "Price Advisor":
         st.success(f"🔴 Premium Price: ₹{premium_price:.2f}")
         st.session_state["usage"]["price"] += 1
 
-# ---------- Social Media Generator ----------
+# Social Media Generator 
 elif selected_page == "Social Media Generator":
     st.header("Social Media Content Generator")
     option = st.radio("Choose Content Type", ["Caption", "Story from My Words", "Hashtags"], key="social_option")
