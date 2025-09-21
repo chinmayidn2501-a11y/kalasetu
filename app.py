@@ -176,7 +176,7 @@ with st.sidebar:
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] .stRadio > div {
-            font-size: 2.1rem;   /* ✅ Bigger text */
+            font-size: 2.1rem;   
             color: white !important;
         }
     </style>
